@@ -1,3 +1,4 @@
+import PageObject.ApiData;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -20,29 +21,10 @@ public class CreateUserApi {
 
     @Test
     void createUser(){
-        String uniq = String.valueOf(System.currentTimeMillis());
-        String email = "cu_" + uniq + "@mail.com";
-        String name  = "Рест_" + uniq;
-
-        List<Map<String, Object>> tasks = List.of(
-                Map.of("title", "Подготовить отчёт", "description", "Собрать метрики"),
-                Map.of("title", "Позвонить клиенту", "description", "Уточнить требования")
-        );
-
-        Map<String, Object> body = Map.of(
-                "email", email,
-                "name",  name,
-                "tasks", tasks,
-                "hobby", "Стрельба из лука, Настолки",
-                "adres", "адрес 1",
-                "inn",   "123456789012",         // 12 цифр
-                "gender","m",
-                "birthday","01.01.1900",
-                "date_start","11.11.2000"
-        );
+        ApiData data = new ApiData();
         Response response = given()
                 .contentType(ContentType.JSON)
-                .body(body)
+                .body(data.body)
                 .when()
                 .post("/tasks/rest/createuserwithtasks")
                 .then()
