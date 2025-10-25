@@ -14,7 +14,7 @@ public class HomePage {
     static String loginSingUpInput = "//*[@id=\"sign-username\"]";
     static String passSingUpInput = "//*[@id=\"sign-password\"]";
     static String singUpButton = "//*[@id=\"signInModal\"]/div/div/div[3]/button[2]";
-
+// Коммент
     public static void openHomePage(){
 
         open(adress);
@@ -76,3 +76,4 @@ public class HomePage {
     }
 
 }
+//New comment
