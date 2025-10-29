@@ -4,16 +4,12 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 public class DeleteAvatar {
-    String email = "vladislav.shiller@gmail.com";
-
-    Map<String, Object> body = Map.of("email", email);
 
     @BeforeEach
     void setup() {
@@ -24,7 +20,7 @@ public class DeleteAvatar {
     void registerUser(){
         Response response = given()
                 .contentType(ContentType.JSON)
-                .body(body)
+                .body(Map.of("email", "vladislav.shiller@gmail.com"))
                 .when()
                 .post("/tasks/rest/deleteavatar")
                 .then()

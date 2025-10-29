@@ -1,28 +1,15 @@
+import PageObject.DoRegisterData;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 
 public class DoRegister {
-
-
-    String uniq = String.valueOf(System.currentTimeMillis());
-    String email = "cu_" + uniq + "@mail.com";
-    String name  = "Рест_" + uniq;
-    String password = "Pass" + uniq;
-
-    Map<String, Object> bodyRegister = Map.of(
-            "email", email,
-            "name",  name,
-            "password", password
-     );
 
         @BeforeEach
         void setup() {
@@ -31,9 +18,10 @@ public class DoRegister {
 
         @Test
         void registerUser(){
+            DoRegisterData data = new DoRegisterData();
             Response response = given()
                     .contentType(ContentType.JSON)
-                    .body(bodyRegister)
+                    .body(data.body)
                     .when()
                     .post("/tasks/rest/doregister")
                     .then()
