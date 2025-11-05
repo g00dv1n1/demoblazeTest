@@ -1,3 +1,5 @@
+package APItests;
+
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -9,7 +11,7 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-public class MagicSearch {
+public class DeleteAvatar {
 
     @BeforeEach
     void setup() {
@@ -20,13 +22,14 @@ public class MagicSearch {
     void registerUser(){
         Response response = given()
                 .contentType(ContentType.JSON)
-                .body(Map.of("query", "Ромашка"))
+                .body(Map.of("email", "vladislav.shiller@gmail.com"))
                 .when()
-                .post("/tasks/rest/magicsearch")
+                .post("/tasks/rest/deleteavatar")
                 .then()
                 .log().all()
-                .statusCode(234)
+                .statusCode(200)
                 .body("type", not(equalTo("error")))
                 .extract().response();
     }
+
 }

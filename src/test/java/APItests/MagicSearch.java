@@ -1,15 +1,17 @@
-import PageObject.CreateCompanyData;
+package APItests;
+
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import java.util.Map;
 
-public class CreateCompany {
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
+public class MagicSearch {
 
     @BeforeEach
     void setup() {
@@ -18,15 +20,14 @@ public class CreateCompany {
 
     @Test
     void registerUser(){
-        CreateCompanyData data = new CreateCompanyData();
         Response response = given()
                 .contentType(ContentType.JSON)
-                .body(data.body)
+                .body(Map.of("query", "Ромашка"))
                 .when()
-                .post("/tasks/rest/createcompany")
+                .post("/tasks/rest/magicsearch")
                 .then()
                 .log().all()
-                .statusCode(200)
+                .statusCode(234)
                 .body("type", not(equalTo("error")))
                 .extract().response();
     }

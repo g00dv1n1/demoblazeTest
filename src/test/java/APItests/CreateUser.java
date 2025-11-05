@@ -1,4 +1,6 @@
-import PageObject.CreateUserData;
+package APItests;
+
+import PointObject.CreateUserData;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;

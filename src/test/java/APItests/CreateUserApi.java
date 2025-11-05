@@ -1,4 +1,6 @@
-import PageObject.ApiData;
+package APItests;
+
+import PointObject.ApiData;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
