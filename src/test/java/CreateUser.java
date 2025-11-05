@@ -1,4 +1,4 @@
-import PageObject.ApiData;
+import PageObject.CreateUserData;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -9,7 +9,8 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 
-public class CreateUserApi {
+public class CreateUser {
+
 
     @BeforeEach
     void setup() {
@@ -17,13 +18,13 @@ public class CreateUserApi {
     }
 
     @Test
-    void createUser(){
-        ApiData data = new ApiData();
+    void registerUser(){
+        CreateUserData data = new CreateUserData();
         Response response = given()
                 .contentType(ContentType.JSON)
                 .body(data.body)
                 .when()
-                .post("/tasks/rest/createuserwithtasks")
+                .post("/tasks/rest/createuser")
                 .then()
                 .log().all()
                 .statusCode(200)

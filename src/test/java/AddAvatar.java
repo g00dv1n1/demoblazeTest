@@ -1,15 +1,14 @@
-import PageObject.ApiData;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import java.io.File;
 
-public class CreateUserApi {
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
+public class AddAvatar  {
+
 
     @BeforeEach
     void setup() {
@@ -17,13 +16,15 @@ public class CreateUserApi {
     }
 
     @Test
-    void createUser(){
-        ApiData data = new ApiData();
-        Response response = given()
-                .contentType(ContentType.JSON)
-                .body(data.body)
+    void uploadAvatar_multipart() {
+        File avatar = new File("src/main/resources/avatar.jpg");
+
+        given()
+                .log().all()
+                .multiPart("email", "vladislav.shiller@gmail.com")
+                .multiPart("avatar", avatar, "image/jpeg")
                 .when()
-                .post("/tasks/rest/createuserwithtasks")
+                .post("/tasks/rest/addavatar")
                 .then()
                 .log().all()
                 .statusCode(200)

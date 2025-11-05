@@ -1,15 +1,15 @@
-import PageObject.ApiData;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import java.util.Map;
 
-public class CreateUserApi {
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
+public class DeleteAvatar {
 
     @BeforeEach
     void setup() {
@@ -17,17 +17,17 @@ public class CreateUserApi {
     }
 
     @Test
-    void createUser(){
-        ApiData data = new ApiData();
+    void registerUser(){
         Response response = given()
                 .contentType(ContentType.JSON)
-                .body(data.body)
+                .body(Map.of("email", "vladislav.shiller@gmail.com"))
                 .when()
-                .post("/tasks/rest/createuserwithtasks")
+                .post("/tasks/rest/deleteavatar")
                 .then()
                 .log().all()
                 .statusCode(200)
                 .body("type", not(equalTo("error")))
                 .extract().response();
     }
+
 }
