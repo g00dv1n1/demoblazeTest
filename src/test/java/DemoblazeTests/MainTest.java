@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static PageObject.HomePage.carouselItems;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.*;
@@ -98,7 +99,7 @@ public class MainTest {
         assertTrue(title().contains("STORE"), "Главная страница не открылась (ожидался заголовок STORE)");
         SelenideElement carousel = $("#carouselExampleIndicators")
                 .shouldBe(visible);
-        $$(HomePage.carousel).shouldBe(CollectionCondition.sizeGreaterThan(1));
+        carouselItems.shouldBe(CollectionCondition.sizeGreaterThan(1));
         $(HomePage.carouselControlNext).shouldBe(visible, enabled);
         HomePage.clickSliderNextAndAssertChanged();
         $(HomePage.carouselControlNext).shouldBe(visible, enabled);
@@ -114,7 +115,7 @@ public class MainTest {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
         SelenideElement carousel = $("#carouselExampleIndicators").shouldBe(visible);
-        $$(HomePage.carousel).shouldBe(CollectionCondition.sizeGreaterThan(1));
+        carouselItems.shouldBe(CollectionCondition.sizeGreaterThan(1));
         int before1 = HomePage.getActiveSliderIndex();
         sleep(6000);
         int after1 = HomePage.getActiveSliderIndex();
