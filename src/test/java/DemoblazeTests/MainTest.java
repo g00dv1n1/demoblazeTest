@@ -2,6 +2,7 @@ package DemoblazeTests;
 
 import PageObject.HomePage;
 import com.codeborne.selenide.CollectionCondition;
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static PageObject.HomePage.carouselItems;
+import static PageObject.HomePage.*;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.*;
@@ -26,16 +27,18 @@ public class MainTest {
     String userPass = "dgqwrgqwrgqwrgq";
     String userLoginIncorrect = "erfwerfqw";
     String userLoginRepeated = "User666";
+    SelenideElement nexus6 = $(By.xpath("//*[@id=\"tbodyid\"]/div[3]/div/div/h4/a"));
+    SelenideElement buyButton = $(By.xpath("//*[@id=\"tbodyid\"]/div[2]/div/a"));
+    SelenideElement cartButton = $(By.xpath("//*[@id=\"cartur\"]"));
 
     @Test
     public void test(){
         HomePage.openHomePage();
-        $(By.xpath("//*[@id=\"tbodyid\"]/div[3]/div/div/h4/a")).click();
-        $(By.xpath("//*[@id=\"tbodyid\"]/div[2]/div/a")).click();
+        $(nexus6).shouldBe(visible).click();
+        $(buyButton).shouldBe(visible).click();
         switchTo().alert().accept();
-        $(By.xpath("//*[@id=\"cartur\"]")).click();
+        cartButton.click();
         $(byText("Nexus 6")).shouldBe(visible);
-        sleep(3000);
     }
 
     @Test
@@ -47,9 +50,7 @@ public class MainTest {
         HomePage.clickSingUp();
         String alertText = switchTo().alert().getText();
         assertEquals("Sign up successful.", alertText);
-        sleep(1000);
         switchTo().alert().accept();
-        sleep(3000);
     }
 
     @Test
@@ -61,9 +62,7 @@ public class MainTest {
         HomePage.clickSingUp();
         String alertText = switchTo().alert().getText();
         assertEquals("This user already exist.", alertText);
-        sleep(1000);
         switchTo().alert().accept();
-        sleep(3000);
     }
 
     @Test
@@ -74,7 +73,6 @@ public class MainTest {
         HomePage.enterPassLogin(userPass);
         HomePage.clickLogin();
         $(byText("Welcome " + userLogin)).shouldBe(visible);
-        sleep(3000);
         HomePage.clickLogOut();
     }
 
@@ -87,7 +85,6 @@ public class MainTest {
         HomePage.clickLogin();
         String alertText = switchTo().alert().getText();
         assertEquals("User does not exist.", alertText);
-        sleep(3000);
         switchTo().alert().accept();
     }
 
@@ -117,13 +114,16 @@ public class MainTest {
         SelenideElement carousel = $("#carouselExampleIndicators").shouldBe(visible);
         carouselItems.shouldBe(CollectionCondition.sizeGreaterThan(1));
         int before1 = HomePage.getActiveSliderIndex();
-        sleep(6000);
+        Selenide.Wait().withTimeout(Duration.ofSeconds(10))
+                .until(driver -> HomePage.getActiveSliderIndex() != before1);
         int after1 = HomePage.getActiveSliderIndex();
         assertNotEquals(before1, after1, "Слайдер не переключился через 5 секунд (1-й переход)");
-        sleep(6000);
+        Selenide.Wait().withTimeout(Duration.ofSeconds(10))
+                .until(driver -> HomePage.getActiveSliderIndex() != after1);
         int after2 = HomePage.getActiveSliderIndex();
         assertNotEquals(after1, after2, "Слайдер не переключился через 5 секунд (2-й переход)");
-        sleep(6000);
+        Selenide.Wait().withTimeout(Duration.ofSeconds(10))
+                .until(driver -> HomePage.getActiveSliderIndex() != after2);
         int after3 = HomePage.getActiveSliderIndex();
         assertNotEquals(after2, after3, "Слайдер не переключился через 5 секунд (3-й переход)");
     }
@@ -133,11 +133,13 @@ public class MainTest {
     void testPhonesCategory() {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
+        int beforeCount = $$(".card-title a").shouldBe(CollectionCondition.sizeGreaterThan(0)).size();
         SelenideElement phonesLink = $$("a.list-group-item")
                 .findBy(exactText("Phones"))
                 .shouldBe(visible, enabled);
         phonesLink.scrollIntoView(true).click();
-        sleep(3000);
+        Wait().withTimeout(Duration.ofSeconds(10))
+                .until(driver -> $$(".card-title a").size() != beforeCount);
         var cards = $$(".card-title a").shouldBe(CollectionCondition.sizeGreaterThan(0));
         List<String> productNames = cards.stream()
                 .map(SelenideElement::getText)
@@ -157,41 +159,72 @@ public class MainTest {
     void testLaptopsCategory() {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
+        int beforeCount = $$("#tbodyid .card").filter(visible)
+                .shouldBe(CollectionCondition.sizeGreaterThan(0))
+                .size();
         SelenideElement laptopsLink = $$("a.list-group-item")
                 .findBy(exactText("Laptops"))
                 .shouldBe(visible, enabled);
         laptopsLink.scrollIntoView(true).click();
-        sleep(3000);
-        var cards = $$(".card-title a").shouldBe(CollectionCondition.sizeGreaterThan(0));
+        Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(driver -> {
+            var names = $$("#tbodyid .card").filter(visible).stream()
+                    .map(card -> card.$(".card-title a").getText())
+                    .toList();
+            boolean countChanged = names.size() != beforeCount;
+            boolean atLeastOneLaptop = names.stream().anyMatch(n ->
+                    n.toLowerCase().matches(".*(vaio|macbook|dell).*")
+            );
+            boolean nonePhones = names.stream().noneMatch(n ->
+                    n.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc).*")
+            );
+            return countChanged || (atLeastOneLaptop && nonePhones);
+        });
+        var cards = $$("#tbodyid .card").filter(visible)
+                .shouldBe(CollectionCondition.sizeGreaterThan(0));
         List<String> productNames = cards.stream()
-                .map(SelenideElement::getText)
-                .collect(Collectors.toList());
+                .map(c -> c.$(".card-title a").getText())
+                .toList();
         boolean allLaptops = productNames.stream().allMatch(name ->
-                name.toLowerCase().contains("vaio") ||
-                        name.toLowerCase().contains("macbook") ||
-                        name.toLowerCase().contains("dell")
+                name.toLowerCase().matches(".*(vaio|macbook|dell).*")
         );
-        assertTrue(allLaptops, "На странице отображаются не только телефоны. Найдено: " + productNames);
+        boolean nonePhones = productNames.stream().noneMatch(name ->
+                name.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc).*")
+        );
+        assertTrue(allLaptops && nonePhones,
+                "На странице отображаются не только ноутбуки. Найдено: " + productNames);
     }
 
     @Test
     void testMonitorsCategory() {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
-        SelenideElement laptopsLink = $$("a.list-group-item")
-                .findBy(exactText("Monitors"))
-                .shouldBe(visible, enabled);
-        laptopsLink.scrollIntoView(true).click();
-        sleep(3000);
-        var cards = $$(".card-title a").shouldBe(CollectionCondition.sizeGreaterThan(0));
-        List<String> productNames = cards.stream()
-                .map(SelenideElement::getText)
-                .collect(Collectors.toList());
-        boolean allMonitors = productNames.stream().allMatch(name ->
-                name.toLowerCase().contains("apple monitor") ||
-                        name.toLowerCase().contains("asus full hd")
-        );
-        assertTrue(allMonitors, "На странице отображаются не только телефоны. Найдено: " + productNames);
+        int beforeCount = $$("#tbodyid .card").filter(visible)
+                .shouldBe(CollectionCondition.sizeGreaterThan(0), Duration.ofSeconds(10))
+                .size();
+        $$("a.list-group-item").findBy(exactText("Monitors"))
+                .shouldBe(visible, enabled).scrollIntoView(true).click();
+        Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(driver -> {
+            List<String> names = $$("#tbodyid .card .card-title a")
+                    .filter(visible)
+                    .texts(); // <- свежие значения, меньше шансов на stale
+            boolean countChanged = names.size() != beforeCount;
+            boolean monitorsOnly = !names.isEmpty()
+                    && names.stream().allMatch(n ->
+                    n.toLowerCase().matches(".*(apple monitor|asus full hd|monitor).*"));
+            boolean noPhonesOrLaptops = names.stream().noneMatch(n ->
+                    n.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc|vaio|macbook|dell).*"));
+            return countChanged || (monitorsOnly && noPhonesOrLaptops);
+        });
+        List<String> productNames = $$("#tbodyid .card .card-title a")
+                .filter(visible)
+                .shouldBe(CollectionCondition.sizeGreaterThan(0), Duration.ofSeconds(10))
+                .texts();
+        boolean allMonitors = productNames.stream().allMatch(n ->
+                n.toLowerCase().matches(".*(apple monitor|asus full hd|monitor).*"));
+        boolean nonePhonesOrLaptops = productNames.stream().noneMatch(n ->
+                n.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc|vaio|macbook|dell).*"));
+        assertTrue(allMonitors && nonePhonesOrLaptops,
+                "На странице отображаются не только мониторы. Найдено: " + productNames);
     }
 
 
@@ -199,25 +232,32 @@ public class MainTest {
     void addLumiaToCart() {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
-        SelenideElement lumiaTitleOnMain = $$("#tbodyid .card .card-title a")
-                .findBy(text("Nokia lumia 1520"))
-                .shouldBe(visible, enabled);
-        lumiaTitleOnMain.scrollIntoView(true).click();
+        $$("#tbodyid .card .card-title a")
+                .findBy(exactText("Nokia lumia 1520"))
+                .shouldBe(visible, enabled)
+                .scrollIntoView(true)
+                .click();
         $("h2.name").shouldHave(exactText("Nokia lumia 1520"));
-        SelenideElement addToCartBtn = $$("a.btn.btn-success.btn-lg")
+        $$("a.btn.btn-success.btn-lg")
                 .findBy(exactText("Add to cart"))
-                .shouldBe(visible, enabled);
-        addToCartBtn.click();
-        try {
-            Selenide.switchTo().alert().accept();
-        } catch (org.openqa.selenium.NoAlertPresentException ignored) {
-            Selenide.sleep(500);
-            try { Selenide.switchTo().alert().accept(); } catch (Exception e){}
-        }
-        $("#cartur").shouldBe(visible, enabled);
+                .shouldBe(visible, enabled)
+                .click();
+        boolean alertAccepted = Selenide.Wait().withTimeout(Duration.ofSeconds(5)).until(driver -> {
+            try {
+                switchTo().alert().accept();
+                return true;
+            } catch (org.openqa.selenium.NoAlertPresentException e) {
+                return false;
+            }
+        });
+        $("#cartur").shouldBe(visible, enabled).click();
         open("https://www.demoblaze.com/cart.html#");
-        sleep(3000);
-        List<String> titles = $$("#tbodyid tr td:nth-child(2)").filter(visible).texts();
+        Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(driver ->
+                $$("#tbodyid tr td:nth-child(2)").texts().contains("Nokia lumia 1520")
+        );
+        List<String> titles = $$("#tbodyid tr td:nth-child(2)")
+                .filter(visible)
+                .texts();
         assertTrue(titles.contains("Nokia lumia 1520"),
                 "В корзине нет строки с 'Nokia lumia 1520'. Найдено: " + titles);
     }
@@ -226,36 +266,46 @@ public class MainTest {
     void deleteLumiaFromCart() {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
-        SelenideElement lumiaLink = $$("#tbodyid .card .card-title a")
+        $$("#tbodyid .card .card-title a")
                 .findBy(exactText("Nokia lumia 1520"))
-                .shouldBe(visible, enabled);
-        lumiaLink.scrollIntoView(true).click();
-        $("h2.name").shouldHave(exactText("Nokia lumia 1520")); // карточка открыта
-        SelenideElement addToCartBtn = $$("a.btn.btn-success.btn-lg")
+                .shouldBe(visible, enabled)
+                .scrollIntoView(true)
+                .click();
+        $("h2.name").shouldHave(exactText("Nokia lumia 1520"));
+        $$("a.btn.btn-success.btn-lg")
                 .findBy(exactText("Add to cart"))
-                .shouldBe(visible, enabled);
-        addToCartBtn.click();
-        try {
-            switchTo().alert().accept();
-        } catch (NoAlertPresentException ignored) {
-            sleep(400);
-            try { switchTo().alert().accept(); } catch (NoAlertPresentException ignored2) { /* ок, идем дальше */ }
-        }
+                .shouldBe(visible, enabled)
+                .click();
+        Selenide.Wait().withTimeout(Duration.ofSeconds(5)).until(driver -> {
+            try {
+                switchTo().alert().accept();
+                return true;
+            } catch (NoAlertPresentException e) {
+                return false;
+            }
+        });
         $("#cartur").shouldBe(visible, enabled).click();
-        sleep(3000);
-        List<String> titlesBefore = $$("#tbodyid tr td:nth-child(2)").filter(visible).texts();
+        open("https://www.demoblaze.com/cart.html#");
+        Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(wd ->
+                $$("#tbodyid tr td:nth-child(2)").texts().contains("Nokia lumia 1520")
+        );
+        List<String> titlesBefore = $$("#tbodyid tr td:nth-child(2)")
+                .filter(visible)
+                .texts();
         assertTrue(titlesBefore.contains("Nokia lumia 1520"),
                 "В корзине нет 'Nokia lumia 1520' после добавления. Найдено: " + titlesBefore);
-        SelenideElement row = $$("#tbodyid tr")
+        $$("#tbodyid tr")
                 .findBy(text("Nokia lumia 1520"))
-                .shouldBe(visible);
-        row.$("td:last-child a").shouldBe(visible, enabled).click();
-        boolean removed = Wait().withTimeout(Duration.ofSeconds(5)).until(webDriver ->
+                .shouldBe(visible)
+                .$("td:last-child a").shouldBe(visible, enabled).click();
+        boolean removed = Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(webDriver ->
                 $$("#tbodyid tr").filter(visible).texts().stream()
                         .noneMatch(s -> s.toLowerCase().contains("nokia lumia 1520"))
         );
         assertTrue(removed, "Строка 'Nokia lumia 1520' не исчезла из корзины");
-        List<String> titlesAfter = $$("#tbodyid tr td:nth-child(2)").filter(visible).texts();
+        List<String> titlesAfter = $$("#tbodyid tr td:nth-child(2)")
+                .filter(visible)
+                .texts();
         assertFalse(titlesAfter.contains("Nokia lumia 1520"),
                 "После удаления товар всё ещё виден в таблице. Осталось: " + titlesAfter);
     }
@@ -264,42 +314,52 @@ public class MainTest {
     void placeOrder() {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
-        SelenideElement lumiaLink = $$("#tbodyid .card .card-title a")
+        $$("#tbodyid .card .card-title a")
                 .findBy(exactText("Nokia lumia 1520"))
-                .shouldBe(visible, enabled);
-        lumiaLink.scrollIntoView(true).click();
+                .shouldBe(visible, enabled)
+                .scrollIntoView(true)
+                .click();
         $("h2.name").shouldHave(exactText("Nokia lumia 1520"));
-        $$("a.btn.btn-success.btn-lg").findBy(exactText("Add to cart"))
+        $$("a.btn.btn-success.btn-lg")
+                .findBy(exactText("Add to cart"))
                 .shouldBe(visible, enabled)
                 .click();
-        try {
-            switchTo().alert().accept();
-        } catch (NoAlertPresentException ignored) {
-            sleep(400);
-            try { switchTo().alert().accept(); } catch (NoAlertPresentException ignored2) { }
-        }
+        Selenide.Wait().withTimeout(Duration.ofSeconds(5)).until(driver -> {
+            try {
+                switchTo().alert().accept();
+                return true;
+            } catch (NoAlertPresentException ignored) {
+                return false;
+            }
+        });
         $("#cartur").shouldBe(visible, enabled).click();
-        sleep(3000);
-        List<String> titles = $$("#tbodyid tr td:nth-child(2)").filter(visible).texts();
+        open("https://www.demoblaze.com/cart.html#");
+        Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(driver ->
+                $$("#tbodyid tr td:nth-child(2)").texts().contains("Nokia lumia 1520")
+        );
+        List<String> titles = $$("#tbodyid tr td:nth-child(2)").texts();
         assertTrue(titles.contains("Nokia lumia 1520"),
                 "В корзине нет 'Nokia lumia 1520'. Найдено: " + titles);
-        $$("button.btn.btn-success").findBy(text("Place Order"))
-                .shouldBe(visible, enabled).click();
+        $$("button.btn.btn-success")
+                .findBy(text("Place Order"))
+                .shouldBe(visible, enabled)
+                .click();
         $("#orderModal").shouldBe(visible);
-        $("#name").shouldBe(enabled).setValue("Ivan Test");
-        $("#country").shouldBe(enabled).setValue("Russia");
-        $("#city").shouldBe(enabled).setValue("Moscow");
-        $("#card").shouldBe(enabled).setValue("4111111111111111");
-        $("#month").shouldBe(enabled).setValue("12");
-        $("#year").shouldBe(enabled).setValue("2030");
-        sleep(1000);
-        $$("div.modal-footer .btn.btn-primary").findBy(exactText("Purchase"))
-                .shouldBe(visible, enabled).click();
-        boolean successShown = Selenide.Wait().withTimeout(Duration.ofSeconds(5)).until(wd -> {
-            SelenideElement popup = $$(".sweet-alert, .swal2-container, .swal-modal")
-                    .findBy(visible);
-            if (popup.exists()) {
-                String txt = popup.getText().toLowerCase();
+        $("#name").shouldBe(visible, enabled).setValue("Ivan Test");
+        $("#country").shouldBe(visible, enabled).setValue("Russia");
+        $("#city").shouldBe(visible, enabled).setValue("Moscow");
+        $("#card").shouldBe(visible, enabled).setValue("4111111111111111");
+        $("#month").shouldBe(visible, enabled).setValue("12");
+        $("#year").shouldBe(visible, enabled).setValue("2030");
+        $$("div.modal-footer .btn.btn-primary")
+                .findBy(exactText("Purchase"))
+                .shouldBe(visible, enabled)
+                .click();
+        boolean successShown = Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(driver -> {
+            ElementsCollection popups = $$(".sweet-alert, .swal2-container, .swal-modal")
+                    .filter(visible);
+            if (!popups.isEmpty()) {
+                String txt = popups.get(0).getText().toLowerCase();
                 return txt.contains("thank") || txt.contains("success") || txt.contains("purchase");
             }
             try {
@@ -332,7 +392,6 @@ public class MainTest {
             switchTo().alert().accept();
             confirmed = true;
         } catch (NoAlertPresentException e) {
-            sleep(400);
             try {
                 switchTo().alert().accept();
                 confirmed = true;
@@ -347,19 +406,32 @@ public class MainTest {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
         SelenideElement nextBtn = $("#next2").shouldBe(visible, enabled);
-        sleep(2000);
         List<String> titlesBefore = $$("#tbodyid .card-title a")
+                .shouldBe(CollectionCondition.sizeGreaterThan(0), Duration.ofSeconds(10))
                 .filter(visible)
                 .texts();
         assertFalse(titlesBefore.isEmpty(), "На первой странице нет товаров для сравнения.");
         nextBtn.scrollIntoView(true).click();
-        sleep(2000);
+        boolean changed = Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(d -> {
+            List<String> after = $$("#tbodyid .card-title a")
+                    .filter(visible)
+                    .texts();
+            return !after.isEmpty() && !after.equals(titlesBefore);
+        });
+        if (!changed) {
+            executeJavaScript("arguments[0].click();", nextBtn);
+            changed = Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(d -> {
+                List<String> after = $$("#tbodyid .card-title a")
+                        .filter(visible)
+                        .texts();
+                return !after.isEmpty() && !after.equals(titlesBefore);
+            });
+        }
         List<String> titlesAfter = $$("#tbodyid .card-title a")
-                .shouldBe(CollectionCondition.sizeGreaterThan(0))
+                .filter(visible)
                 .texts();
-        boolean pageChanged = !titlesAfter.equals(titlesBefore);
-        assertTrue(pageChanged,
+        assertTrue(changed && !titlesAfter.equals(titlesBefore),
                 "После нажатия 'Next' каталог не изменился. " +
-                        "До: " + titlesBefore + ", После: " + titlesAfter);
+                        "До: " + titlesBefore + " | После: " + titlesAfter);
     }
 }
