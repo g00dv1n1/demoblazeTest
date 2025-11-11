@@ -1,4 +1,4 @@
-package PageObject;
+package PointObject;
 
 import java.util.Map;
 
