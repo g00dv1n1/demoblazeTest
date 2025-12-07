@@ -1,10 +1,7 @@
 package DemoblazeTests;
 
 import PageObject.HomePage;
-import com.codeborne.selenide.CollectionCondition;
-import com.codeborne.selenide.ElementsCollection;
-import com.codeborne.selenide.Selenide;
-import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.*;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoAlertPresentException;
@@ -20,6 +17,12 @@ import static com.codeborne.selenide.Selenide.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MainTest {
+
+    public static void setup() {
+        // Настройка удаленного WebDriver
+        Configuration.remote = "http://localhost:4444/wd/hub"; // Адрес вашего контейнера
+        Configuration.browser = "chrome";
+    }
 
     String uniq = String.valueOf(System.currentTimeMillis());
     String userLoginSingUp = "us" + uniq;
