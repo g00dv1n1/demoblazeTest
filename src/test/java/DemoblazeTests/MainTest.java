@@ -157,39 +157,40 @@ public class MainTest {
     void testLaptopsCategory() {
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
-        int beforeCount = $$("#tbodyid .card").filter(visible)
-                .shouldBe(CollectionCondition.sizeGreaterThan(0))
+        int beforeCount = $$("#tbodyid .card .card-title a")
+                .filter(visible)
+                .shouldBe(CollectionCondition.sizeGreaterThan(0), Duration.ofSeconds(10))
                 .size();
-        SelenideElement laptopsLink = $$("a.list-group-item")
+        $$("a.list-group-item")
                 .findBy(exactText("Laptops"))
-                .shouldBe(visible, enabled);
-        laptopsLink.scrollIntoView(true).click();
-        Selenide.Wait().withTimeout(Duration.ofSeconds(10)).until(driver -> {
-            var names = $$("#tbodyid .card").filter(visible).stream()
-                    .map(card -> card.$(".card-title a").getText())
-                    .toList();
-            boolean countChanged = names.size() != beforeCount;
-            boolean atLeastOneLaptop = names.stream().anyMatch(n ->
-                    n.toLowerCase().matches(".*(vaio|macbook|dell).*")
-            );
-            boolean nonePhones = names.stream().noneMatch(n ->
-                    n.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc).*")
-            );
-            return countChanged || (atLeastOneLaptop && nonePhones);
-        });
-        var cards = $$("#tbodyid .card").filter(visible)
-                .shouldBe(CollectionCondition.sizeGreaterThan(0));
-        List<String> productNames = cards.stream()
-                .map(c -> c.$(".card-title a").getText())
-                .toList();
+                .shouldBe(visible, enabled)
+                .scrollIntoView(true)
+                .click();
+        Selenide.Wait()
+                .withTimeout(Duration.ofSeconds(10))
+                .ignoring(org.openqa.selenium.StaleElementReferenceException.class)
+                .until(driver -> {
+                    java.util.List<String> names = $$("#tbodyid .card .card-title a")
+                            .filter(visible)
+                            .texts();
+                    boolean countChanged = names.size() != beforeCount;
+                    boolean laptopsOnly = !names.isEmpty() &&
+                            names.stream().allMatch(n ->
+                                    n.toLowerCase().matches(".*(vaio|macbook|dell).*"));
+                    boolean noPhones = names.stream().noneMatch(n ->
+                            n.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc).*"));
+                    return countChanged || (laptopsOnly && noPhones);
+                });
+        java.util.List<String> productNames = $$("#tbodyid .card .card-title a")
+                .filter(visible)
+                .shouldBe(CollectionCondition.sizeGreaterThan(0), Duration.ofSeconds(10))
+                .texts();
         boolean allLaptops = productNames.stream().allMatch(name ->
-                name.toLowerCase().matches(".*(vaio|macbook|dell).*")
-        );
+                name.toLowerCase().matches(".*(vaio|macbook|dell).*"));
         boolean nonePhones = productNames.stream().noneMatch(name ->
-                name.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc).*")
-        );
+                name.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc).*"));
         assertTrue(allLaptops && nonePhones,
-                "На странице отображаются не только ноутбуки. Найдено: " + productNames);
+                "На странице отображаются не только ноутбуки.\nНайдено: " + productNames);
     }
 
     @Test
