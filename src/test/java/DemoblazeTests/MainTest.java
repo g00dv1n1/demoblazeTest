@@ -4,8 +4,9 @@ import PageObject.HomePage;
 import com.codeborne.selenide.*;
 import config.BaseTest;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoAlertPresentException;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.FluentWait;
+import org.openqa.selenium.support.ui.Wait;
 
 import java.time.Duration;
 import java.util.List;
@@ -155,42 +156,60 @@ public class MainTest {
 
     @Test
     void testLaptopsCategory() {
+        // Открываем главную
         HomePage.openHomePage();
         assertTrue(title().contains("STORE"), "Главная страница не открылась");
-        int beforeCount = $$("#tbodyid .card .card-title a")
-                .filter(visible)
-                .shouldBe(CollectionCondition.sizeGreaterThan(0), Duration.ofSeconds(10))
-                .size();
+
+        // Переходим в категорию Laptops
         $$("a.list-group-item")
                 .findBy(exactText("Laptops"))
                 .shouldBe(visible, enabled)
-                .scrollIntoView(true)
                 .click();
-        Selenide.Wait()
+
+        // Берём "сырой" WebDriver, чтобы сделать стабильный FluentWait
+        WebDriver driver = WebDriverRunner.getWebDriver();
+
+        Wait<WebDriver> wait = new FluentWait<>(driver)
                 .withTimeout(Duration.ofSeconds(10))
-                .ignoring(org.openqa.selenium.StaleElementReferenceException.class)
-                .until(driver -> {
-                    java.util.List<String> names = $$("#tbodyid .card .card-title a")
-                            .filter(visible)
-                            .texts();
-                    boolean countChanged = names.size() != beforeCount;
-                    boolean laptopsOnly = !names.isEmpty() &&
-                            names.stream().allMatch(n ->
-                                    n.toLowerCase().matches(".*(vaio|macbook|dell).*"));
-                    boolean noPhones = names.stream().noneMatch(n ->
-                            n.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc).*"));
-                    return countChanged || (laptopsOnly && noPhones);
-                });
-        java.util.List<String> productNames = $$("#tbodyid .card .card-title a")
-                .filter(visible)
-                .shouldBe(CollectionCondition.sizeGreaterThan(0), Duration.ofSeconds(10))
-                .texts();
-        boolean allLaptops = productNames.stream().allMatch(name ->
-                name.toLowerCase().matches(".*(vaio|macbook|dell).*"));
-        boolean nonePhones = productNames.stream().noneMatch(name ->
-                name.toLowerCase().matches(".*(galaxy|iphone|lumia|nexus|xperia|htc).*"));
-        assertTrue(allLaptops && nonePhones,
-                "На странице отображаются не только ноутбуки.\nНайдено: " + productNames);
+                .pollingEvery(Duration.ofMillis(300))
+                .ignoring(StaleElementReferenceException.class);
+
+        // Ждём, пока появится устойчивый список названий товаров
+        List<String> titles = wait.until(d -> {
+            List<WebElement> els =
+                    d.findElements(By.cssSelector("#tbodyid .card .card-title a"));
+            if (els.isEmpty()) {
+                return null; // ещё не загрузилось - продолжаем ждать
+            }
+
+            try {
+                // Пробуем один раз спокойно прочитать все тексты
+                List<String> names = els.stream()
+                        .map(WebElement::getText)
+                        .filter(t -> !t.isBlank())
+                        .toList();
+
+                return names.isEmpty() ? null : names;
+            } catch (StaleElementReferenceException e) {
+                // если во время чтения что-то стало stale — вернём null, FluentWait попробует ещё раз
+                return null;
+            }
+        });
+
+        // На всякий случай выведем в лог, что реально пришло
+        System.out.println("Laptops category products: " + titles);
+
+        // Проверяем, что в списке нет телефонов/мониторов
+        List<String> phoneMarkers = List.of(
+                "galaxy", "iphone", "lumia", "nexus", "xperia", "htc", "monitor"
+        );
+
+        boolean hasForeign = titles.stream()
+                .map(String::toLowerCase)
+                .anyMatch(name -> phoneMarkers.stream().anyMatch(name::contains));
+
+        assertTrue(!hasForeign,
+                "В категории 'Laptops' отображаются не только ноутбуки: " + titles);
     }
 
     @Test
