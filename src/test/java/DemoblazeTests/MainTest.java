@@ -17,7 +17,7 @@ import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class MainTest extends BaseTest {
+public class MainTest {
 
     String uniq = String.valueOf(System.currentTimeMillis());
     String userLoginSingUp = "us" + uniq;
